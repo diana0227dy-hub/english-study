@@ -13,7 +13,7 @@
 <section><h2>누적 오답노트</h2><div id="mistakes"></div></section></div>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 const SUPABASE_URL="https://veydlntcudsinhxaogxm.supabase.co";
-const SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_ANON_KEY="sb_publishable_GXMsVBepBMIi-qPv0wOLnA_2ROLDzvw";
 const configured=SUPABASE_URL.startsWith("https://")&&!SUPABASE_ANON_KEY.startsWith("YOUR_");
 const db=configured?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 const $=id=>document.getElementById(id);let user=null,videos=[],expressions=[],selected=null,deck=[],index=0,flipped=false;
