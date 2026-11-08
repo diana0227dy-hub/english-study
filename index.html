@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Friendly English Study Room</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#243047;background:#f5f7fc}body{margin:0}header{background:#263b69;color:white;padding:22px}main{max-width:1050px;margin:auto;padding:20px}section{background:white;border:1px solid #dfe4ef;border-radius:16px;padding:20px;margin:14px 0}input,textarea,button,select{font:inherit;padding:10px;border:1px solid #cbd3e2;border-radius:8px;max-width:100%;box-sizing:border-box}input,textarea{width:100%;margin:5px 0}button{cursor:pointer;background:#3154a2;color:white;border:0;margin:4px}button.secondary{background:#edf1fa;color:#243047}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.hidden{display:none}.muted{color:#6a758b}.tab{background:#e5ebf9;color:#243047}.tab.active{background:#3154a2;color:white}.card{background:#f0f4ff;text-align:center;padding:35px;border-radius:12px;cursor:pointer;min-height:110px}.entry{border-top:1px solid #e1e5ee;padding:12px 0}small{color:#68748a}h1,h2{margin-top:0}
+</style></head><body><header><h1>Friendly English Study Room</h1><div>영상별 표현 · 양방향 플래시카드 · 오답노트 · 개인 대시보드</div></header><main>
+<section id="setup"><h2>시작하기</h2><p>관리자가 Supabase 연결 정보를 설정하면 회원가입과 학습 기록 동기화가 활성화됩니다.</p><p class="muted">설정은 index.html 상단의 SUPABASE_URL / SUPABASE_ANON_KEY를 수정하세요.</p></section>
+<section id="auth" class="hidden"><h2>로그인 / 회원가입</h2><input id="email" type="email" placeholder="이메일"><input id="password" type="password" placeholder="비밀번호 (6자 이상)"><div class="row"><button id="login">로그인</button><button id="signup" class="secondary">회원가입</button></div><small id="authmsg"></small></section>
+<div id="app" class="hidden"><section><div class="row"><strong id="who"></strong><button id="logout" class="secondary">로그아웃</button></div></section>
+<section><h2>대시보드</h2><div id="stats"></div></section>
+<section><h2>영상 추가</h2><input id="url" placeholder="https://www.youtube.com/watch?v=..."><input id="title" placeholder="영상 제목"><button id="addVideo">영상 등록</button><p class="muted">자동 자막 추출은 아직 연결되지 않았습니다. 영상별 표현을 직접 추가할 수 있습니다.</p></section>
+<section><h2>영상별 학습 탭</h2><div id="tabs" class="row"></div><div id="video"></div></section>
+<section><h2>양방향 플래시카드</h2><div class="row"><select id="direction"><option value="ko">한국어 → 영어</option><option value="en">영어 → 한국어</option></select><select id="scope"><option value="all">전체 표현</option><option value="video">현재 영상</option><option value="wrong">오답만</option></select><button id="next" class="secondary">다음 카드</button></div><div id="flash" class="card">표현을 추가해 주세요.</div><div class="row"><button id="miss">틀렸어요</button><button id="know">맞혔어요</button></div></section>
+<section><h2>누적 오답노트</h2><div id="mistakes"></div></section></div>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
+const SUPABASE_URL="YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY";
+const configured=SUPABASE_URL.startsWith("https://")&&!SUPABASE_ANON_KEY.startsWith("YOUR_");
+const db=configured?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+const $=id=>document.getElementById(id);let user=null,videos=[],expressions=[],selected=null,deck=[],index=0,flipped=false;
+const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const msg=e=>alert(e.message||String(e));
+function videoId(s){try{let u=new URL(s);if(u.hostname.includes("youtu.be"))return u.pathname.slice(1);if(u.hostname.includes("youtube.com"))return u.searchParams.get("v")||u.pathname.split("/").pop()}catch{}return null}
+async function refresh(){let [v,e]=await Promise.all([db.from("videos").select("*").order("created_at",{ascending:false}),db.from("expressions").select("*").order("created_at",{ascending:true})]);if(v.error||e.error)return msg(v.error||e.error);videos=v.data;expressions=e.data;if(!videos.some(x=>x.id===selected))selected=videos[0]?.id||null;render()}
+function render(){ $("stats").textContent=`영상 ${videos.length}개 · 표현 ${expressions.length}개 · 정답 ${expressions.reduce((s,e)=>s+e.correct_count,0)}회 · 오답 ${expressions.reduce((s,e)=>s+e.wrong_count,0)}회`;
+$("tabs").innerHTML=videos.map(v=>`<button class="tab ${v.id===selected?"active":""}" data-id="${v.id}">${safe(v.title)}</button>`).join("");
+$("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{selected=b.dataset.id;render()});
+const v=videos.find(x=>x.id===selected);$("video").innerHTML=v?`<h3>${safe(v.title)}</h3><a href="${safe(v.url)}" target="_blank" rel="noopener noreferrer">유튜브에서 보기</a><h3>표현 추가</h3><form id="entry"><input name="english" placeholder="영어 표현" required><input name="korean" placeholder="한국어 뜻" required><textarea name="example" placeholder="예문"></textarea><button>표현 저장</button></form><div id="entries"></div>`:"<p>영상을 등록하면 여기에서 표현을 추가할 수 있어요.</p>";
+if(v){$("entry").onsubmit=async ev=>{ev.preventDefault();const f=new FormData(ev.target);let r=await db.from("expressions").insert({user_id:user.id,video_id:selected,english:f.get("english"),korean:f.get("korean"),example:f.get("example")});if(r.error)msg(r.error);else refresh()};
+$("entries").innerHTML=expressions.filter(e=>e.video_id===selected).map(e=>`<div class="entry"><b>${safe(e.english)}</b> — ${safe(e.korean)}<p>${safe(e.example)}</p><small>오답 ${e.wrong_count}회</small> <button class="secondary" data-delete="${e.id}">삭제</button></div>`).join("");
+$("entries").querySelectorAll("[data-delete]").forEach(b=>b.onclick=async()=>{if(!confirm("이 표현을 삭제할까요?"))return;const r=await db.from("expressions").delete().eq("id",b.dataset.delete);if(r.error)msg(r.error);else refresh()})}
+$("mistakes").innerHTML=expressions.filter(e=>e.wrong_count>0).sort((a,b)=>b.wrong_count-a.wrong_count).map(e=>`<div class="entry"><b>${safe(e.english)}</b> — ${safe(e.korean)}<p>${safe(e.example)}</p><small>틀린 횟수 ${e.wrong_count}</small></div>`).join("")||"<p>아직 오답이 없습니다.</p>";buildDeck()}
+function buildDeck(){deck=expressions.filter(e=>$("scope").value==="all"||($("scope").value==="video"?e.video_id===selected:e.wrong_count>0));if(index>=deck.length)index=0;flipped=false;drawCard()}
+function drawCard(){const e=deck[index];$("flash").innerHTML=e?(flipped?`<b>${safe($("direction").value==="ko"?e.english:e.korean)}</b><p>${safe(e.example)}</p>`:`<small>카드를 눌러 정답 확인</small><h2>${safe($("direction").value==="ko"?e.korean:e.english)}</h2>`):"복습할 표현이 없습니다."}
+$("flash").onclick=()=>{if(deck.length){flipped=!flipped;drawCard()}};
+$("next").onclick=()=>{if(deck.length){index=(index+1)%deck.length;flipped=false;drawCard()}};
+$("scope").onchange=buildDeck;$("direction").onchange=()=>{flipped=false;drawCard()};
+async function rate(ok){const e=deck[index];if(!e)return;const col=ok?"correct_count":"wrong_count";const r=await db.from("expressions").update({[col]:e[col]+1}).eq("id",e.id);if(r.error)return msg(r.error);index++;await refresh()}
+$("know").onclick=()=>rate(true);$("miss").onclick=()=>rate(false);
+$("addVideo").onclick=async()=>{const url=$("url").value.trim(),id=videoId(url);if(!id)return alert("올바른 YouTube 영상 URL을 입력해 주세요.");const title=$("title").value.trim()||"YouTube "+id;const r=await db.from("videos").insert({user_id:user.id,url,title});if(r.error)msg(r.error);else{$("url").value="";$("title").value="";refresh()}};
+async function auth(type){const email=$("email").value.trim(),password=$("password").value;const r=type==="signup"?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});$("authmsg").textContent=r.error?.message||(type==="signup"?"가입 요청 완료. 이메일 확인이 필요할 수 있습니다.":"");if(r.error)return}
+$("login").onclick=()=>auth("login");$("signup").onclick=()=>auth("signup");$("logout").onclick=()=>db.auth.signOut();
+async function session(){const s=await db.auth.getUser();user=s.data.user;$("auth").classList.toggle("hidden",!!user);$("app").classList.toggle("hidden",!user);$("who").textContent=user?.email||"";if(user)await refresh()}
+if(configured){$("setup").classList.add("hidden");$("auth").classList.remove("hidden");db.auth.onAuthStateChange(()=>setTimeout(session,0));session()}
+</script></body></html>
