@@ -12,7 +12,7 @@
 <section><h2>양방향 플래시카드</h2><div class="row"><select id="direction"><option value="ko">한국어 → 영어</option><option value="en">영어 → 한국어</option></select><select id="scope"><option value="all">전체 표현</option><option value="video">현재 영상</option><option value="wrong">오답만</option></select><button id="next" class="secondary">다음 카드</button></div><div id="flash" class="card">표현을 추가해 주세요.</div><div class="row"><button id="miss">틀렸어요</button><button id="know">맞혔어요</button></div></section>
 <section><h2>누적 오답노트</h2><div id="mistakes"></div></section></div>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
-const SUPABASE_URL="YOUR_SUPABASE_URL";
+const SUPABASE_URL="https://veydlntcudsinhxaogxm.supabase.co";
 const SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY";
 const configured=SUPABASE_URL.startsWith("https://")&&!SUPABASE_ANON_KEY.startsWith("YOUR_");
 const db=configured?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
